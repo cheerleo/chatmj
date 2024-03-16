@@ -8,7 +8,7 @@ const cn = {
   Error: {
     Unauthorized: isApp
       ? "检测到无效 API Key，请前往[设置](/#/settings)页检查 API Key 是否配置正确。"
-      : "🌟欢迎使用ChatGPT-Midjourney🌟 \n请点击[登录](/#/auth)输入访问密码",
+      : "🌟🌟 欢迎使用ChatGPT-Midjourney 🌟🌟 \n\n请点击 ➡️ [登录](/#/auth) ⬅️ 输入访问密码",
   },
   Auth: {
     Title: "需要密码",
@@ -104,9 +104,9 @@ const cn = {
     Input: (submitKey: string) => {
       var inputHints = `${submitKey} 发送`;
       if (submitKey === String(SubmitKey.Enter)) {
-        inputHints += "，Shift + Enter 换行";
+        inputHints += "";
       }
-      return inputHints + "\n启动Midjourney绘图：输入/mj及关键词，例如：/mj cute cat, sunshine";
+      return inputHints + "\n画画请输入/mj及关键词";
     },
     Send: "发送",
     Config: {
@@ -302,7 +302,7 @@ const cn = {
   },
   Store: {
     DefaultTopic: "新的聊天",
-    BotHello: "有什么可以帮你的吗",
+    BotHello: "Hello，我能聊天和画画，有什么可以帮你的吗。\n\n🧑‍🎨启动MJ画画：输入/mj及关键词，例如：/mj 赛博朋克猫猫",
     Error: "出错了，稍后重试吧",
     Prompt: {
       History: (content: string) => "这是历史聊天总结作为前情提要：" + content,

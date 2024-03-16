@@ -1,6 +1,6 @@
 import {create} from "zustand";
 import {persist} from "zustand/middleware";
-import { translateToEnglish } from './baiduTranslate';
+
 import {trimTopic} from "../utils";
 
 import Locale, {getLang} from "../locales";
@@ -396,20 +396,6 @@ export const useChatStore = create<ChatStore>()(
                 const session = get().currentSession();
                 const modelConfig = session.mask.modelConfig;
 
-                // 检测用户输入是否为中文
-                const isChineseInput = /[\u4e00-\u9fa5]/.test(content);
-
-                let translatedContent = content;
-
-                if (isChineseInput) {
-                    try {
-                        // 如果是中文,则先翻译成英文
-                        translatedContent = await translateToEnglish(content);
-                    } catch (error) {
-                        console.error('Translation error:', error);
-                        // 如果翻译失败,则继续使用原始的中文内容
-                    }
-                }
                 if (
                     extAttr?.mjImageMode &&
                     (extAttr?.useImages?.length ?? 0) > 0 &&
@@ -430,7 +416,7 @@ export const useChatStore = create<ChatStore>()(
                     });
                 }
 
-                const userContent = fillTemplateWith(translatedContent, modelConfig);
+                const userContent = fillTemplateWith(content, modelConfig);
                 console.log("[User Input] after template: ", userContent);
 
                 const userMessage: ChatMessage = createMessage({
@@ -469,7 +455,46 @@ export const useChatStore = create<ChatStore>()(
                 ) {
                     botMessage.model = "midjourney";
                     const startFn = async () => {
-                        const prompt = content.substring(3).trim();
+                        let prompt = content.substring(3).trim();
+                        let options = ""; // 用于存储 "--" 后的参数
+
+                        // 检查并分离 "--" 后的参数
+                        const optionsIndex = prompt.indexOf(" --");
+                        if (optionsIndex > -1) {
+                            options = prompt.substring(optionsIndex); // 保留 "--" 和后面的部分
+                            prompt = prompt.substring(0, optionsIndex); // 中文部分，用于翻译
+                        }
+
+                        // 检查是否包含中文，如果是，则翻译
+                        if (/[\u3400-\u9FBF]/.test(prompt)) {
+                            try {
+                                const response = await fetch('/api/translate', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ text: prompt, from: 'zh', to: 'en' }),
+                                });
+                                if (!response.ok) {
+                                    throw new Error(`翻译服务调用失败: ${response.statusText}`);
+                                }
+
+                                const data = await response.json();
+                                if (data.success && data.translatedText) {
+                                    // 使用翻译后的文本，并重新组合中文翻译部分和 "--" 后的参数
+                                    prompt = data.translatedText + options;
+                                } else {
+                                    throw new Error('翻译失败');
+                                }
+                            } catch (error) {
+                                console.error('翻译调用异常:', error);
+                                // 处理调用异常...
+                            }
+                        } else {
+                            // 如果没有中文，也要确保 "--" 后的部分被重新附加
+                            prompt += options;
+                        }
+                        
                         let action: string = "IMAGINE";
                         console.log(action);
                         const firstSplitIndex = prompt.indexOf("::");
